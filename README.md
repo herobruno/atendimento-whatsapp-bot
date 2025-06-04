@@ -11,6 +11,16 @@ Este é um bot de WhatsApp desenvolvido para automatizar o atendimento inicial d
 - Sistema de estados para controle de conversas
 - Envio de menu apenas uma vez por dia por usuário
 
+## 📸 Screenshots
+
+### Autenticação
+![Autenticação](screenshots/auth.png)
+*Interface de autenticação com QR Code*
+
+### Menu Principal
+![Menu Principal](screenshots/menu.png)
+*Menu principal do bot no WhatsApp*
+
 ## 📋 Pré-requisitos
 
 - Node.js (versão 14 ou superior)
