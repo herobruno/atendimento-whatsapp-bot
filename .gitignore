@@ -1,0 +1,18 @@
+# Ignorar pasta de serviços
+/services/
+
+# Ignorar pasta de autenticação
+/auth_info/
+
+# Ignorar node_modules
+/node_modules/
+
+# Ignorar arquivos de ambiente
+.env
+
+# Ignorar logs
+*.log
+
+# Ignorar arquivos do sistema
+.DS_Store
+Thumbs.db 
