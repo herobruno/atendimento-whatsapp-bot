@@ -197,29 +197,29 @@ async function iniciarBot() {
                         break
 
                     case '2':
-                        userState.stage = 'ondemand_servico'
+                        userState.stage = 'ondemand_cadastro'
                         userState = await handlePlanoOnDemand(sock, sender, texto, userState, sendMessageWithDelay)
                         break
 
                     case '3':
-                        userState.stage = 'opencode_info'
+                        userState.stage = 'opencode_cadastro'
                         userState = await handlePlanoOpenCode(sock, sender, texto, userState, sendMessageWithDelay)
                         break
 
                     case '4':
-                        userState.stage = 'boletos_motivo'
+                        userState.stage = 'boletos_cadastro'
                         userState = await handleBoletos(sock, sender, texto, userState, sendMessageWithDelay)
                         break
 
                     case '5':
-                        userState.stage = 'integracoes_motivo'
+                        userState.stage = 'integracoes_cadastro'
                         userState = await handleIntegracoes(sock, sender, texto, userState, sendMessageWithDelay)
                         break
 
                     case '6':
                         await sendMessageWithDelay(sock, sender, `Entendido! ✅
 
-Vou encaminhar você para um de nossos atendentes para que possam te ajudar com isso.
+Vou encaminhar você para um de nossos atendentes para que possam te ajudar.
 
 ⏳ Aguarde um momento...`)
                         userState.stage = 'menu'
