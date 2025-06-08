@@ -14,11 +14,13 @@ Este é um bot de WhatsApp desenvolvido para automatizar o atendimento inicial d
 ## 📸 Screenshots
 
 ### Autenticação
-![Autenticação](screenshots/auth.png)
+![image](https://github.com/user-attachments/assets/cfa6d6e2-2167-4d47-a557-9b147db53641)
+
 *Interface de autenticação com QR Code*
 
 ### Menu Principal
-![Menu Principal](screenshots/menu.png)
+![image](https://github.com/user-attachments/assets/2b9e06c3-c8d4-4109-bb36-c890b1bb259a)
+
 *Menu principal do bot no WhatsApp*
 
 ## 📋 Pré-requisitos
@@ -111,7 +113,7 @@ Cada serviço (`services/*.js`) deve implementar:
 Para personalizar o bot:
 
 1. Altere o nome da empresa no menu principal (`index.js`)
-2. Modifique os fluxos de conversa nos arquivos de serviço
+2. Modifique os fluxos de conversa nos arquivos de serviço conforme suas necessidades. É nesse ponto que você criará suas regras de negócio.
 3. Ajuste os tempos de delay nas mensagens (padrão: 6 segundos)
 
 ## 📝 Notas Importantes
