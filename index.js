@@ -46,7 +46,7 @@ const userStates = new Map()
 const dailyMessages = new Map()
 
 const menuPrincipal = `
-👋 *Olá! Seja bem-vindo ao assistente virtual da (Sua Empresa).*
+👋 *Olá! Seja bem-vindo ao assistente virtual da (Logarithm).*
 
 Digite o número correspondente ao serviço que você deseja conhecer:
 
