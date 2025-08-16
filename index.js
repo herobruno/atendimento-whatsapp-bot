@@ -27,6 +27,37 @@ const app = express()
 const server = createServer(app)
 const io = new Server(server)
 
+io.on('connection', (socket) => {
+    console.log('Cliente conectado via socket.io');
+
+    socket.on('sendMessage', async ({ phoneNumber, message }) => {
+        if (sock && sock.user) {
+            try {
+                // Sanitiza o número de telefone para remover caracteres não numéricos
+                const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
+                const jid = `${sanitizedPhoneNumber}@s.whatsapp.net`;
+                
+                const [result] = await sock.onWhatsApp(jid);
+
+                if (result && result.exists) {
+                    await sock.sendMessage(jid, { text: message });
+                    console.log(`Mensagem enviada para ${sanitizedPhoneNumber}`);
+                    socket.emit('status', `Mensagem enviada para ${sanitizedPhoneNumber}`);
+                } else {
+                    console.log(`O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
+                    socket.emit('error', `O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
+                }
+            } catch (error) {
+                console.error(`Erro ao enviar mensagem para ${phoneNumber}:`, error);
+                socket.emit('error', `Erro ao enviar mensagem: ${error.message}`);
+            }
+        } else {
+            console.log('Tentativa de enviar mensagem, mas o bot não está conectado.');
+            socket.emit('error', 'O bot não está conectado. Por favor, escaneie o QR Code e aguarde a conexão.');
+        }
+    });
+});
+
 // Servir arquivos estáticos da pasta public
 app.use(express.static('public'))
 
