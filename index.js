@@ -19,6 +19,11 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 // Função para enviar mensagem com delay
 const sendMessageWithDelay = async (sock, sender, text) => {
+    // Pega o estado, atualiza o timestamp e salva de volta no Map
+    const userState = userStates.get(sender) || { stage: 'menu' }
+    userState.lastMessageSentTimestamp = Date.now()
+    userStates.set(sender, userState)
+
     await delay(6000) // 6 segundos de delay
     await sock.sendMessage(sender, { text })
 }
@@ -65,6 +70,47 @@ app.use(express.static('public'))
 server.listen(3000, () => {
     console.log('Servidor web rodando em http://localhost:3000')
 })
+
+let autoMessageEnabled = true; // Default to enabled
+
+io.on('connection', (socket) => {
+    console.log('Cliente conectado via socket.io');
+
+    socket.on('sendMessage', async ({ phoneNumber, message }) => {
+        if (sock && sock.user) {
+            try {
+                // Sanitiza o número de telefone para remover caracteres não numéricos
+                const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
+                const jid = `${sanitizedPhoneNumber}@s.whatsapp.net`;
+                
+                const [result] = await sock.onWhatsApp(jid);
+
+                if (result && result.exists) {
+                    await sock.sendMessage(jid, { text: message });
+                    console.log(`Mensagem enviada para ${sanitizedPhoneNumber}`);
+                    socket.emit('status', `Mensagem enviada para ${sanitizedPhoneNumber}`);
+                } else {
+                    console.log(`O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
+                    socket.emit('error', `O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
+                }
+            } catch (error) {
+                console.error(`Erro ao enviar mensagem para ${phoneNumber}:`, error);
+                socket.emit('error', `Erro ao enviar mensagem: ${error.message}`);
+            }
+        } else {
+            console.log('Tentativa de enviar mensagem, mas o bot não está conectado.');
+            socket.emit('error', 'O bot não está conectado. Por favor, escaneie o QR Code e aguarde a conexão.');
+        }
+    });
+
+    // Listener for the toggle switch
+    socket.on('toggleAutoMessage', ({ enabled }) => {
+        autoMessageEnabled = enabled;
+        console.log(`Auto message feature is now ${autoMessageEnabled ? 'enabled' : 'disabled'}`);
+        // Optionally, emit the current state back to the client if needed for initial load
+        // socket.emit('autoMessageStatus', autoMessageEnabled);
+    });
+});
 
 let sock = null
 let saveState = null
@@ -210,41 +256,50 @@ async function iniciarBot() {
                          msg.message.imageMessage?.caption || 
                          ''
 
+            // Obter estado atual do usuário
+            let userState = userStates.get(sender) || { stage: 'menu' }
+
+            // VERIFICAÇÃO ANTI-LOOP
+            const now = Date.now()
+            // Se a última mensagem foi ENVIADA (início do processo de envio) há menos de 7 segundos, ignora.
+            // O delay é de 6s, então uma margem de 7s é razoável.
+            if (userState.lastMessageSentTimestamp && (now - userState.lastMessageSentTimestamp < 7000)) {
+                console.log(`Ignorando mensagem de ${sender} para evitar loop de bot.`)
+                return
+            }
+
             // Verificar se é uma solicitação de atendente humano
             if (humano.some(p => texto.toLowerCase().includes(p))) {
                 await sendMessageWithDelay(sock, sender, '👨‍💼 Tudo bem! Encaminhando você para um de nossos atendentes...')
                 return
             }
 
-            // Obter estado atual do usuário
-            let userState = userStates.get(sender) || { stage: 'menu' }
-
             // Processar resposta baseado no estado atual
             if (userState.stage === 'menu') {
                 switch (texto) {
                     case '1':
                         userState.stage = 'projeto_personalizado_cadastro'
-                        userState = await handleProjetoPersonalizado(sock, sender, texto, userState, sendMessageWithDelay)
+                        if (autoMessageEnabled) { userState = await handleProjetoPersonalizado(sock, sender, texto, userState, sendMessageWithDelay); }
                         break
 
                     case '2':
                         userState.stage = 'ondemand_cadastro'
-                        userState = await handlePlanoOnDemand(sock, sender, texto, userState, sendMessageWithDelay)
+                        if (autoMessageEnabled) { userState = await handlePlanoOnDemand(sock, sender, texto, userState, sendMessageWithDelay); }
                         break
 
                     case '3':
                         userState.stage = 'opencode_cadastro'
-                        userState = await handlePlanoOpenCode(sock, sender, texto, userState, sendMessageWithDelay)
+                        if (autoMessageEnabled) { userState = await handlePlanoOpenCode(sock, sender, texto, userState, sendMessageWithDelay); }
                         break
 
                     case '4':
                         userState.stage = 'boletos_cadastro'
-                        userState = await handleBoletos(sock, sender, texto, userState, sendMessageWithDelay)
+                        if (autoMessageEnabled) { userState = await handleBoletos(sock, sender, texto, userState, sendMessageWithDelay); }
                         break
 
                     case '5':
                         userState.stage = 'integracoes_cadastro'
-                        userState = await handleIntegracoes(sock, sender, texto, userState, sendMessageWithDelay)
+                        if (autoMessageEnabled) { userState = await handleIntegracoes(sock, sender, texto, userState, sendMessageWithDelay); }
                         break
 
                     case '6':
@@ -257,7 +312,7 @@ Vou encaminhar você para um de nossos atendentes para que possam te ajudar.
                         break
 
                     default:
-                        if (shouldSendMenu(sender)) {
+                        if (autoMessageEnabled && shouldSendMenu(sender)) {
                             await sendMessageWithDelay(sock, sender, menuPrincipal)
                         }
                 }
