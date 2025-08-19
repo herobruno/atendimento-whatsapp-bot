@@ -28,40 +28,10 @@ const sendMessageWithDelay = async (sock, sender, text) => {
     await sock.sendMessage(sender, { text })
 }
 
+// --- Express server setup ---
 const app = express()
 const server = createServer(app)
 const io = new Server(server)
-
-io.on('connection', (socket) => {
-    console.log('Cliente conectado via socket.io');
-
-    socket.on('sendMessage', async ({ phoneNumber, message }) => {
-        if (sock && sock.user) {
-            try {
-                // Sanitiza o número de telefone para remover caracteres não numéricos
-                const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
-                const jid = `${sanitizedPhoneNumber}@s.whatsapp.net`;
-                
-                const [result] = await sock.onWhatsApp(jid);
-
-                if (result && result.exists) {
-                    await sock.sendMessage(jid, { text: message });
-                    console.log(`Mensagem enviada para ${sanitizedPhoneNumber}`);
-                    socket.emit('status', `Mensagem enviada para ${sanitizedPhoneNumber}`);
-                } else {
-                    console.log(`O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
-                    socket.emit('error', `O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
-                }
-            } catch (error) {
-                console.error(`Erro ao enviar mensagem para ${phoneNumber}:`, error);
-                socket.emit('error', `Erro ao enviar mensagem: ${error.message}`);
-            }
-        } else {
-            console.log('Tentativa de enviar mensagem, mas o bot não está conectado.');
-            socket.emit('error', 'O bot não está conectado. Por favor, escaneie o QR Code e aguarde a conexão.');
-        }
-    });
-});
 
 // Servir arquivos estáticos da pasta public
 app.use(express.static('public'))
@@ -70,38 +40,14 @@ app.use(express.static('public'))
 server.listen(3000, () => {
     console.log('Servidor web rodando em http://localhost:3000')
 })
+// --- End Express server setup ---
 
 let autoMessageEnabled = true; // Default to enabled
 
+// --- Socket.io connection handling ---
 io.on('connection', (socket) => {
     console.log('Cliente conectado via socket.io');
 
-    socket.on('sendMessage', async ({ phoneNumber, message }) => {
-        if (sock && sock.user) {
-            try {
-                // Sanitiza o número de telefone para remover caracteres não numéricos
-                const sanitizedPhoneNumber = phoneNumber.replace(/\D/g, '');
-                const jid = `${sanitizedPhoneNumber}@s.whatsapp.net`;
-                
-                const [result] = await sock.onWhatsApp(jid);
-
-                if (result && result.exists) {
-                    await sock.sendMessage(jid, { text: message });
-                    console.log(`Mensagem enviada para ${sanitizedPhoneNumber}`);
-                    socket.emit('status', `Mensagem enviada para ${sanitizedPhoneNumber}`);
-                } else {
-                    console.log(`O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
-                    socket.emit('error', `O número ${sanitizedPhoneNumber} não foi encontrado no WhatsApp.`);
-                }
-            } catch (error) {
-                console.error(`Erro ao enviar mensagem para ${phoneNumber}:`, error);
-                socket.emit('error', `Erro ao enviar mensagem: ${error.message}`);
-            }
-        } else {
-            console.log('Tentativa de enviar mensagem, mas o bot não está conectado.');
-            socket.emit('error', 'O bot não está conectado. Por favor, escaneie o QR Code e aguarde a conexão.');
-        }
-    });
 
     // Listener for the toggle switch
     socket.on('toggleAutoMessage', ({ enabled }) => {
@@ -111,6 +57,7 @@ io.on('connection', (socket) => {
         // socket.emit('autoMessageStatus', autoMessageEnabled);
     });
 });
+// --- End Socket.io connection handling ---
 
 let sock = null
 let saveState = null
@@ -204,7 +151,7 @@ async function iniciarBot() {
                         margin: 1,
                         color: {
                             dark: '#000000',
-                            light: '#ffffff'
+                            light: '#000000'
                         },
                         width: 300,
                         errorCorrectionLevel: 'H'
@@ -268,11 +215,6 @@ async function iniciarBot() {
                 return
             }
 
-            // Verificar se é uma solicitação de atendente humano
-            if (humano.some(p => texto.toLowerCase().includes(p))) {
-                await sendMessageWithDelay(sock, sender, '👨‍💼 Tudo bem! Encaminhando você para um de nossos atendentes...')
-                return
-            }
 
             // Processar resposta baseado no estado atual
             if (userState.stage === 'menu') {
